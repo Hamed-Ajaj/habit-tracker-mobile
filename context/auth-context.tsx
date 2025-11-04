@@ -6,7 +6,7 @@ interface AuthContextType {
   user: Models.User<Models.Preferences> | null;
   isLoadingUser?: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,13 +29,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoadingUser(false);
     } catch (error) {
       setUser(null);
+      if (error instanceof Error) {
+        console.log(error.message);
+      }
       setIsLoadingUser(false);
     }
   };
 
   const signUp = async (email: string, password: string) => {
     try {
-      const user = await account.create(ID.unique(), email, password);
+      await account.create(ID.unique(), email, password);
       signIn(email, password);
       return null;
     } catch (error) {
@@ -48,7 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
   const signIn = async (email: string, password: string) => {
     try {
-      const user = await account.createEmailPasswordSession(email, password);
+      await account.createEmailPasswordSession(email, password);
+      const session = await account.get();
+      setUser(session);
       return null;
     } catch (error) {
       if (error instanceof Error) {
