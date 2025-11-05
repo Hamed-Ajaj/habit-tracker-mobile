@@ -1,7 +1,10 @@
+import { ProgressBarLoader } from "@/components/loader";
 import { useAuth } from "@/context/auth-context";
-import { useHabits } from "@/lib/hook";
+import { useDeleteHabit, useHabits } from "@/lib/hook";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRef } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 import { Text, Button, Surface } from "react-native-paper";
 export default function Index() {
   const { signOut, user } = useAuth();
@@ -11,13 +14,58 @@ export default function Index() {
     isError,
     error,
   } = useHabits(user?.$id || "");
+  const deleteHabitMutation = useDeleteHabit();
 
+  const swipeableRefs = useRef<{ [key: string]: Swipeable | null }>({});
+  const renderRightActions = () => (
+    <View style={styles.swipeActionRight}>
+      <MaterialCommunityIcons
+        name="check-circle-outline"
+        size={32}
+        color={"#fff"}
+      />
+    </View>
+  );
+
+  // const renderRightActions = (habitId: string) => {
+  //   return (
+  //     <View
+  //       style={{
+  //         backgroundColor: "#f44336",
+  //         justifyContent: "center",
+  //         alignItems: "flex-end",
+  //         width: 100,
+  //         borderRadius: 18,
+  //         marginBottom: 18,
+  //       }}
+  //     >
+  //       <Button
+  //         icon="delete"
+  //         onPress={() => {
+  //           deleteHabitMutation.mutate(habitId);
+  //           const swipeable = swipeableRefs.current[habitId];
+  //           if (swipeable) {
+  //             swipeable.close();
+  //           }
+  //         }}
+  //       >
+  //         Delete
+  //       </Button>
+  //     </View>
+  //   );
+  // };
+
+  const renderLeftActions = () => (
+    <View style={styles.swipeActionLeft}>
+      <MaterialCommunityIcons
+        name="trash-can-outline"
+        size={32}
+        color={"#fff"}
+      />
+    </View>
+  );
   if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
+    return <ProgressBarLoader />;
   }
   return (
     <View style={styles.container}>
@@ -29,8 +77,8 @@ export default function Index() {
           Sign Out
         </Button>
       </View>
-      <ScrollView>
-        {habits?.length === 0 ? (
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {habits?.length === 0 && !isLoading ? (
           <View style={styles.emptyState}>
             <Text variant="bodyMedium" style={styles.emptyStateText}>
               You have no habits yet. Start by adding a new habit!
@@ -38,34 +86,56 @@ export default function Index() {
           </View>
         ) : (
           habits?.map((habit) => (
-            <Surface key={habit.$id} style={styles.habitCard}>
-              <View key={habit.$id} style={styles.habitCardContent}>
-                <Text variant="titleMedium" style={styles.habitCardTitle}>
-                  {habit.title}
-                </Text>
-                <Text variant="bodyMedium" style={styles.habitCardDescription}>
-                  {habit.description}
-                </Text>
-                <View style={styles.habitCardFooter}>
-                  <View style={styles.habitStreakBadge}>
-                    <MaterialCommunityIcons
-                      name="fire"
-                      color={"#ff9800"}
-                      size={18}
-                    />
-                    <Text style={styles.habitStreakText}>
-                      {habit.streak_count} day streak
-                    </Text>
-                  </View>
-                  <View style={styles.habitFrequencyBadge}>
-                    <Text style={styles.habitFrequencyText}>
-                      {habit.frequency.charAt(0).toLocaleUpperCase() +
-                        habit.frequency.slice(1)}
-                    </Text>
+            <Swipeable
+              ref={(ref) => {
+                swipeableRefs.current[habit.$id] = ref;
+              }}
+              key={habit.$id}
+              overshootLeft={false}
+              overshootRight={false}
+              renderLeftActions={renderLeftActions}
+              renderRightActions={renderRightActions}
+              onSwipeableOpen={(diretion) => {
+                if (diretion === "left") {
+                  deleteHabitMutation.mutate(habit.$id);
+                } else if (diretion === "right") {
+                  // Mark as complete action can be handled here
+                }
+                swipeableRefs.current[habit.$id]?.close();
+              }}
+            >
+              <Surface style={styles.habitCard}>
+                <View style={styles.habitCardContent}>
+                  <Text variant="titleMedium" style={styles.habitCardTitle}>
+                    {habit.title}
+                  </Text>
+                  <Text
+                    variant="bodyMedium"
+                    style={styles.habitCardDescription}
+                  >
+                    {habit.description}
+                  </Text>
+                  <View style={styles.habitCardFooter}>
+                    <View style={styles.habitStreakBadge}>
+                      <MaterialCommunityIcons
+                        name="fire"
+                        color={"#ff9800"}
+                        size={18}
+                      />
+                      <Text style={styles.habitStreakText}>
+                        {habit.streak_count} day streak
+                      </Text>
+                    </View>
+                    <View style={styles.habitFrequencyBadge}>
+                      <Text style={styles.habitFrequencyText}>
+                        {habit.frequency.charAt(0).toLocaleUpperCase() +
+                          habit.frequency.slice(1)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </Surface>
+              </Surface>
+            </Swipeable>
           ))
         )}
       </ScrollView>
@@ -149,5 +219,25 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     color: "#666",
+  },
+  swipeActionLeft: {
+    justifyContent: "center",
+    alignItems: "flex-start",
+    flex: 1,
+    backgroundColor: "#e53935",
+    borderRadius: 18,
+    marginBottom: 18,
+    marginTop: 2,
+    paddingLeft: 16,
+  },
+  swipeActionRight: {
+    justifyContent: "center",
+    alignItems: "flex-end",
+    flex: 1,
+    backgroundColor: "#4caf50",
+    borderRadius: 18,
+    marginBottom: 18,
+    marginTop: 2,
+    paddingRight: 16,
   },
 });

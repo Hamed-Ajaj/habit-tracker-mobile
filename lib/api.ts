@@ -33,3 +33,11 @@ export const createHabite = async (
     throw error;
   }
 };
+
+export const deleteHabit = async (habitId: string) => {
+  try {
+    await databases.deleteDocument(DATABASE_ID, HABITS_COLLECTION_ID, habitId);
+  } catch (error) {
+    throw error;
+  }
+};

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createHabite, fetchHabits } from "./api";
+import { createHabite, deleteHabit, fetchHabits } from "./api";
 export const useHabits = (userId: string) => {
   return useQuery({
     queryKey: ["habits"],
@@ -27,6 +27,17 @@ export const useCreateHabit = () => {
     }) => createHabite(userId, title, description, frequency),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["habits"] }); // Refetch habits after creation
+    },
+  });
+};
+
+export const useDeleteHabit = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (habitId: string) => deleteHabit(habitId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["habits"] }); // Refetch habits after deletion
     },
   });
 };
