@@ -1,6 +1,11 @@
 import { ProgressBarLoader } from "@/components/loader";
 import { useAuth } from "@/context/auth-context";
-import { useDeleteHabit, useHabits } from "@/lib/hook";
+import {
+  useCompletedHabits,
+  useDeleteHabit,
+  useHabits,
+  useUpdateHabit,
+} from "@/lib/hook";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRef } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
@@ -14,7 +19,12 @@ export default function Index() {
     isError,
     error,
   } = useHabits(user?.$id || "");
+
+  const { data: completedHabits, error: completionsError } = useCompletedHabits(
+    user?.$id || "",
+  );
   const deleteHabitMutation = useDeleteHabit();
+  const updateHabitMutation = useUpdateHabit();
 
   const swipeableRefs = useRef<{ [key: string]: Swipeable | null }>({});
   const renderRightActions = () => (
@@ -99,7 +109,7 @@ export default function Index() {
                 if (diretion === "left") {
                   deleteHabitMutation.mutate(habit.$id);
                 } else if (diretion === "right") {
-                  // Mark as complete action can be handled here
+                  updateHabitMutation.mutate(habit);
                 }
                 swipeableRefs.current[habit.$id]?.close();
               }}
