@@ -1,9 +1,8 @@
 import { useAuth } from "@/context/auth-context";
-import { DATABASE_ID, databases, HABITS_COLLECTION_ID } from "@/lib/appwrite";
+import { useCreateHabit } from "@/lib/hook";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View, StyleSheet } from "react-native";
-import { ID } from "react-native-appwrite";
 import {
   Button,
   SegmentedButtons,
@@ -24,39 +23,19 @@ const AddHabitScreen = () => {
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [frequency, setFrequency] = useState<Frequency>("daily");
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-
+  const createHabitMutation = useCreateHabit();
   const handleSubmit = async () => {
     if (!user) return;
-    try {
-      setLoading(true);
-      await databases.createDocument(
-        DATABASE_ID,
-        HABITS_COLLECTION_ID,
-        ID.unique(),
-        {
-          user_id: user.$id,
-          title,
-          description,
-          frequency,
-          streak_count: 0,
-          last_completed: new Date().toISOString(),
-          // created_at: new Date().toISOString(),
-        },
-      );
-      setLoading(false);
-      router.back();
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("An unexpected error occurred");
-      }
-      setLoading(false);
-    } finally {
-      setLoading(false);
-    }
+    createHabitMutation.mutate({
+      userId: user.$id,
+      title: title.trim(),
+      description: description.trim(),
+      frequency,
+    });
+    setTitle("");
+    setDescription("");
+    setFrequency("daily");
+    router.back();
   };
   return (
     <View style={styles.container}>
@@ -88,10 +67,14 @@ const AddHabitScreen = () => {
         disabled={!title.trim() || !description.trim()}
         onPress={handleSubmit}
       >
-        {loading ? "Adding..." : "Add Habit"}
+        {createHabitMutation.isPending ? "Adding..." : "Add Habit"}
       </Button>
 
-      {error && <Text style={{ color: theme.colors.error }}>{error}</Text>}
+      {createHabitMutation.error && (
+        <Text style={{ color: theme.colors.error }}>
+          {createHabitMutation.error.message}
+        </Text>
+      )}
     </View>
   );
 };
