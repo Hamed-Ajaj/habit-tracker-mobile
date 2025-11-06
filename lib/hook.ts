@@ -3,8 +3,8 @@ import {
   completeHabit,
   createHabite,
   deleteHabit,
-  fetchCompletedHabits,
   fetchHabits,
+  fetchTodayCompletedHabits,
 } from "./api";
 import { Habit } from "@/types/habits";
 export const useHabits = (userId: string) => {
@@ -17,10 +17,20 @@ export const useHabits = (userId: string) => {
   });
 };
 
-export const useCompletedHabits = (userId: string) => {
+export const useTodayCompletedHabits = (userId: string) => {
   return useQuery({
     queryKey: ["completions"],
-    queryFn: () => fetchCompletedHabits(userId),
+    queryFn: () => fetchTodayCompletedHabits(userId),
+    enabled: !!userId,
+    refetchInterval: 1000 * 60 * 5, // Refetch every 5 minutes
+    staleTime: 1000 * 60 * 1, // Data is considered fresh for 1 minute
+  });
+};
+
+export const useAllCompletedHabits = (userId: string) => {
+  return useQuery({
+    queryKey: ["completions"],
+    queryFn: () => fetchTodayCompletedHabits(userId),
     enabled: !!userId,
     refetchInterval: 1000 * 60 * 5, // Refetch every 5 minutes
     staleTime: 1000 * 60 * 1, // Data is considered fresh for 1 minute

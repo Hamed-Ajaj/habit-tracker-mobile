@@ -1,9 +1,9 @@
 import { ProgressBarLoader } from "@/components/loader";
 import { useAuth } from "@/context/auth-context";
 import {
-  useCompletedHabits,
   useDeleteHabit,
   useHabits,
+  useTodayCompletedHabits,
   useUpdateHabit,
 } from "@/lib/hook";
 import { Habit } from "@/types/habits";
@@ -21,9 +21,8 @@ export default function Index() {
     error,
   } = useHabits(user?.$id || "");
 
-  const { data: completedHabits, error: completionsError } = useCompletedHabits(
-    user?.$id || "",
-  );
+  const { data: completedHabits, error: completionsError } =
+    useTodayCompletedHabits(user?.$id || "");
   const deleteHabitMutation = useDeleteHabit();
   const updateHabitMutation = useUpdateHabit();
 

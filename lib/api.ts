@@ -14,7 +14,7 @@ export const fetchHabits = async (userId: string) => {
   return res.documents as Habit[];
 };
 
-export const fetchCompletedHabits = async (userId: string) => {
+export const fetchTodayCompletedHabits = async (userId: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   try {
@@ -25,6 +25,19 @@ export const fetchCompletedHabits = async (userId: string) => {
         Query.equal("user_id", userId || ""),
         Query.greaterThanEqual("completed_at", today.toISOString()),
       ],
+    );
+    return res.documents as HabitCompletion[];
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchAllCompletedHabits = async (userId: string) => {
+  try {
+    const res = await databases.listDocuments(
+      DATABASE_ID,
+      COMPLETIONS_COLLECTION_ID!,
+      [Query.equal("user_id", userId || "")],
     );
     return res.documents as HabitCompletion[];
   } catch (error) {
