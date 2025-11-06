@@ -6,6 +6,7 @@ import {
   useHabits,
   useUpdateHabit,
 } from "@/lib/hook";
+import { Habit } from "@/types/habits";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRef } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
@@ -27,43 +28,41 @@ export default function Index() {
   const updateHabitMutation = useUpdateHabit();
 
   const swipeableRefs = useRef<{ [key: string]: Swipeable | null }>({});
-  const renderRightActions = () => (
+  const isHabitCompleted = (habitId: string) => {
+    return completedHabits?.some(
+      (completion) => completion.habit_id === habitId,
+    );
+  };
+  const handleCompleteHabit = (habit: Habit) => {
+    if (!user || isHabitCompleted(habit.$id)) {
+      return;
+    } else {
+      try {
+        updateHabitMutation.mutate(habit);
+      } catch (error) {
+        if (error instanceof Error) {
+          console.log("Error completing habit:", error.message);
+        } else {
+          console.log("Unknown error completing habit");
+        }
+      }
+    }
+  };
+  const renderRightActions = (habitId: string) => (
     <View style={styles.swipeActionRight}>
-      <MaterialCommunityIcons
-        name="check-circle-outline"
-        size={32}
-        color={"#fff"}
-      />
+      {isHabitCompleted(habitId) ? (
+        <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+          Completed
+        </Text>
+      ) : (
+        <MaterialCommunityIcons
+          name="check-circle-outline"
+          size={32}
+          color={"#fff"}
+        />
+      )}
     </View>
   );
-
-  // const renderRightActions = (habitId: string) => {
-  //   return (
-  //     <View
-  //       style={{
-  //         backgroundColor: "#f44336",
-  //         justifyContent: "center",
-  //         alignItems: "flex-end",
-  //         width: 100,
-  //         borderRadius: 18,
-  //         marginBottom: 18,
-  //       }}
-  //     >
-  //       <Button
-  //         icon="delete"
-  //         onPress={() => {
-  //           deleteHabitMutation.mutate(habitId);
-  //           const swipeable = swipeableRefs.current[habitId];
-  //           if (swipeable) {
-  //             swipeable.close();
-  //           }
-  //         }}
-  //       >
-  //         Delete
-  //       </Button>
-  //     </View>
-  //   );
-  // };
 
   const renderLeftActions = () => (
     <View style={styles.swipeActionLeft}>
@@ -104,17 +103,22 @@ export default function Index() {
               overshootLeft={false}
               overshootRight={false}
               renderLeftActions={renderLeftActions}
-              renderRightActions={renderRightActions}
+              renderRightActions={() => renderRightActions(habit.$id)}
               onSwipeableOpen={(diretion) => {
                 if (diretion === "left") {
                   deleteHabitMutation.mutate(habit.$id);
                 } else if (diretion === "right") {
-                  updateHabitMutation.mutate(habit);
+                  handleCompleteHabit(habit);
                 }
                 swipeableRefs.current[habit.$id]?.close();
               }}
             >
-              <Surface style={styles.habitCard}>
+              <Surface
+                style={[
+                  styles.habitCard,
+                  isHabitCompleted(habit.$id) && styles.habitCardCompleted,
+                ]}
+              >
                 <View style={styles.habitCardContent}>
                   <Text variant="titleMedium" style={styles.habitCardTitle}>
                     {habit.title}
@@ -174,6 +178,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: "#f7f2fa",
     elevation: 1,
+  },
+  habitCardCompleted: {
+    opacity: 0.6,
   },
   habitCardContent: {
     padding: 20,

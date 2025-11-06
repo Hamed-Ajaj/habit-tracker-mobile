@@ -58,33 +58,50 @@ export const createHabite = async (
 };
 
 export const completeHabit = async (habit: Habit) => {
-  const currentDate = new Date().toISOString();
-  try {
-    await databases.createDocument(
-      DATABASE_ID,
-      COMPLETIONS_COLLECTION_ID!,
-      ID.unique(),
-      {
-        habit_id: habit.$id,
-        completed_at: currentDate,
-        user_id: habit.user_id,
-      },
-    );
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
 
-    await databases.updateDocument(
-      DATABASE_ID,
-      HABITS_COLLECTION_ID,
-      habit.$id,
-      {
-        streak_count: habit.streak_count + 1,
-        last_completed: currentDate,
-      },
-    );
-  } catch (error) {
-    throw error;
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+
+  // 1️⃣ Check if already completed today
+  const existingCompletion = await databases.listDocuments(
+    DATABASE_ID,
+    COMPLETIONS_COLLECTION_ID!,
+    [
+      Query.equal("habit_id", habit.$id),
+      Query.equal("user_id", habit.user_id),
+      Query.between(
+        "completed_at",
+        startOfDay.toISOString(),
+        endOfDay.toISOString(),
+      ),
+    ],
+  );
+
+  if (existingCompletion.documents.length > 0) {
+    // Already completed → prevent streak update
+    return { message: "Already completed today" };
   }
-};
 
+  // Create new completion
+  const currentDate = new Date().toISOString();
+  await databases.createDocument(
+    DATABASE_ID,
+    COMPLETIONS_COLLECTION_ID!,
+    ID.unique(),
+    {
+      habit_id: habit.$id,
+      completed_at: currentDate,
+      user_id: habit.user_id,
+    },
+  );
+
+  await databases.updateDocument(DATABASE_ID, HABITS_COLLECTION_ID, habit.$id, {
+    streak_count: habit.streak_count + 1,
+    last_completed: currentDate,
+  });
+};
 export const deleteHabit = async (habitId: string) => {
   try {
     await databases.deleteDocument(DATABASE_ID, HABITS_COLLECTION_ID, habitId);
