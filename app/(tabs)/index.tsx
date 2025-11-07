@@ -72,7 +72,7 @@ export default function Index() {
       />
     </View>
   );
-  if (isLoading) {
+  if (isLoading || !habits || !completedHabits) {
     return <ProgressBarLoader />;
   }
   return (

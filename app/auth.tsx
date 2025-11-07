@@ -31,8 +31,6 @@ export default function AuthScreen() {
       router.replace("/");
     }
     setError("");
-
-    console.log(email, password);
   };
   return (
     <KeyboardAvoidingView
